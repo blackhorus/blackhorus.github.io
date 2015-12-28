@@ -1,5 +1,5 @@
 ---
-Title: How to modify the Confluence original Skin fo Ouya
+Title: How to modify the Confluence original Skin for Ouya
 Date: 2015-03-15
 Excerpt: Step by step on how to find and modify the original confluence skin. 
 ---
@@ -13,7 +13,7 @@ I started by looking for the **DialogButtonMenu.xml** file as I did with the win
 
 I tried to search on the Internet on where to find the xbmc fils (in my case, it was **SPMC** a fork to add some enhancements), and I found out, that it's stored in the /data folder, espacially in :
 
- > /data/data/com.semperpax.spmc/cache/apk/assets/addons/skin.confluence
+ 	/data/data/com.semperpax.spmc/cache/apk/assets/addons/skin.confluence
 
 
 But to get there, first you need to root the Ouya, and access with either ftp, or adb (or some other fancy way). For my case, I installed DroidFtp server, to gain an easy access with my FileZilla client.

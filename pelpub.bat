@@ -1,1 +1,0 @@
-pelican content --output pub --settings publishconf.py
