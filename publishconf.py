@@ -42,3 +42,5 @@ TIMEZONE = "America/New_York"
 LOCALE = 'en'
 THEME = "../../pelican-themes/flasky"
 DEFAULT_LANG = u'en'
+
+MD_EXTENSIONS = ['fenced_code', 'codehilite(css_class=highlight)', 'extra']

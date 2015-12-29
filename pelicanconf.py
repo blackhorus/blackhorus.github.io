@@ -23,3 +23,5 @@ FEED_RSS = 'feeds/all.rss.xml'
 CATEGORY_FEED_RSS = 'feeds/%s.rss.xml'
 DEFAULT_CATEGORY = 'Uncategorized'
 
+MD_EXTENSIONS = ['fenced_code', 'codehilite(css_class=highlight)', 'extra']
+
