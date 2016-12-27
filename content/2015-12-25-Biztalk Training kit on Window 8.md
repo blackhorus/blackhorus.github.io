@@ -4,9 +4,9 @@ Date: 2015-12-25
 Excerpt: Simple way to install the training kit on any machine with Hyper-V (Script included).
 ---
 
-*Please note that by default, Hyper-V is not activated and should be to lunch the vm's.*
+*Please note that by default, Hyper-V is not activated and should be, to lunch the vm's.*
 
-I struggled a lot to make these lab working on my windows 8.1 machine. First, I get this error when trying to lunch the simple **importVM.exe **command as described by the official instruction you get when you download the training kit:
+I struggled to make these lab working on my windows 8.1 machine. First, I get this error when trying to lunch the simple **importVM.exe **command as described by the official instruction you get when you download the training kit:
 
     System.ApplicationException: Error while importing the Hyper-V configuration settings for bt10d-01. ---> System.Management.ManagementException: Non trouvé 
 
@@ -25,7 +25,9 @@ Here's a simple powershell script that I wrote to help you create a vm for every
 
 This script will create 17 virtual machine, each with 2GB of memory. It will attach the lab and the vhd for the demo files (**bt10t-allfiles.vhd**) in the created vm.
 
-Copy & paste this in a ps1 file, lunch powershell as admin, and execute this script.
+Please note, that no error management was taking to create this script. So use it at you own risk! 
+
+So, Copy & paste this in a ps1 file, launch powershell as admin, and execute the file! you can also [download it](https://gist.githubusercontent.com/blackhorus/aaf27f47b040dcf3dbdd/raw/646b14f87cbfc131c1309eaec833c0f23c42761b/biztalk.ps1)  
 
 ```powershell
 $absolutePath = ""

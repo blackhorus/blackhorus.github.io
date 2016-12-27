@@ -39,11 +39,12 @@ echo pel COMMAND
 echo.
 echo Commands:
 echo    serve                   run the server.
-echo    run                     generate the dev
+echo    dev                     generate the dev
 echo    pub                     generate the published site
 echo    site                    publish the source to github source branch
 echo    git                     publish to git
 echo.
+echo IMPORTANT! You should switch with the 'Workon' command before using the pelican commands.
 GOTO :end
 
 :site

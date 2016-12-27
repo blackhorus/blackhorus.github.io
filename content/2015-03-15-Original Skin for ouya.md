@@ -3,7 +3,7 @@ Title: How to modify the Confluence original Skin for Ouya
 Date: 2015-03-15
 Excerpt: Step by step on how to find and modify the original confluence skin. 
 ---
-![OUYA](https://dl.dropboxusercontent.com/u/574142/scriptogram/ouya.jpg)
+![OUYA](images/ouya.jpg)
 
 I wanted to apply the same modification I made in my previous  [article](http://scriptogr.am/blackhorus/post/how-to-shutdown-your-nas-from-xbmc) to add a shutdown entry to the Exit menu.
 
