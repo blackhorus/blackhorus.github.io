@@ -7,7 +7,7 @@ Excerpt: Step by step on how to find and modify the original confluence skin.
 
 I wanted to apply the same modification I made in my previous  [article](http://scriptogr.am/blackhorus/post/how-to-shutdown-your-nas-from-xbmc) to add a shutdown entry to the Exit menu.
 
-![](https://dl.dropboxusercontent.com/u/574142/scriptogram/EdenScreenShots-PowerMenu.png)
+![Standard Menu](images/EdenScreenShots-PowerMenu.png)
 
 I started by looking for the **DialogButtonMenu.xml** file as I did with the windows box, but it seems that Ouya (and Android in general) don't store their apk installation files in the sdcard. 
 
@@ -40,4 +40,4 @@ I modified the **DialogButtonMenu.xml** file by inserting this snippet of code b
 
 And here's the final result on my SPMC 14.2, with the added entry to shutdown my NAS :
 
-![](https://dl.dropboxusercontent.com/u/574142/scriptogram/SPMC14-shutdwon.jpg)
+![SPMC Menu](images/SPMC14-shutdwon.jpg)
