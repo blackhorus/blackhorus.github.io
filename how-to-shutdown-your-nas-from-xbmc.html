@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link href='https://fonts.googleapis.com/css?family=Noticia+Text:400,700' rel='stylesheet' type='text/css' />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="">
+    <meta name="author" content="Black Horus">
+
+    <title> How to shutdown your NAS from XBMC | Blog </title>
+
+    <link rel="stylesheet" href="/theme/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/font-awesome.css" type="text/css"/>
+    <link rel="shortcut icon" href="/theme/images/favicon.ico">
+  </head>
+  <body>
+    <div class=container>
+<div class=navigation>
+    <ul>
+            <li><a href="/index.html">Blog</a> </li>
+            <li><a href="/archives.html">Archive</a> </li>
+            <li><a href="/pages/about-me.html">About</a> </li>
+    </ul>
+</div>
+<div class=separator></div>        
+        <div class=body>
+    <h1 class="title"> How to shutdown your NAS from XBMC</h1>
+    <p class=date> Tue 19 March 2013 </p>
+    <p><img alt="DNS323" src="http://www.dlink.com/-/media/Images/Products/DNS/323/DNS%20323%20A1.png?h=230&amp;w=408&amp;crop=1&amp;rc=5" /></p>
+<p><em>The solution below is specific to the <a href="http://www.dlink.com/us/en/support/product/dns-323-sharecenter-2-bay-network-storage-enclosure">DNS323 NAS</a>, but can be modified to handle your NAS if it gets a standard web interface where you get the option to shutdown.</em></p>
+<p>I always wanted to shutdown my nas from XBMC without going through the web interface.  First, I started by looking for some prexisting solution with no sucess. So, I decided to create one. </p>
+<p>On my Quest to find a solution, I managed to stumble over a batch script on this website : <a href="http://forums.dlink.com/index.php?topic=8362.0">http://forums.dlink.com/index.php?topic=8362.0</a>. </p>
+<p>It was easy to convert it to python. </p>
+<div class="highlight"><pre><span class="kn">import</span> <span class="nn">urllib</span><span class="o">,</span><span class="nn">urllib2</span> <span class="o">,</span> <span class="nn">re</span>
+
+<span class="n">NAME</span><span class="o">=</span><span class="s">&quot;admin&quot;</span>
+<span class="n">PASSWD</span><span class="o">=</span><span class="s">&quot;pass&quot;</span>
+<span class="n">IP</span><span class="o">=</span><span class="s">&quot;192.168.2.13&quot;</span>
+
+<span class="n">Base_URL</span> <span class="o">=</span> <span class="s">&quot;http://&quot;</span><span class="o">+</span> <span class="n">IP</span> <span class="o">+</span> <span class="s">&quot;/goform/formLogin?f_login_type=0&amp;f_LOGIN_NAME=&quot;</span><span class="o">+</span> <span class="n">NAME</span> <span class="o">+</span><span class="s">&quot;&amp;f_LOGIN_PASSWD=&quot;</span><span class="o">+</span> <span class="n">PASSWD</span>
+<span class="n">shutdown_URL</span> <span class="o">=</span> <span class="s">&quot;http://&quot;</span><span class="o">+</span> <span class="n">IP</span> <span class="o">+</span> <span class="s">&quot;/goform/sysShutDown?shootdown&quot;</span>
+
+<span class="c">#Login screen</span>
+<span class="n">WebSock</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">Base_URL</span><span class="p">)</span>
+<span class="n">WebHTML</span> <span class="o">=</span> <span class="n">WebSock</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="c">#shutdown screen</span>
+<span class="n">WebSock</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">shutdown_URL</span><span class="p">)</span>
+<span class="n">WebHTML</span> <span class="o">=</span> <span class="n">WebSock</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+<span class="n">WebSock</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+
+
+<p><em>Warning : You have to be logged out from the DNS323 web interface or this script will fail to execute, as some gently guy post it!</em></p>
+<p>You can run it, to test for its success <em>(Replace username, password and ip of your nas where needed)</em></p>
+<p>Next, head to XBMC to add a menu entry. Modify the Confluene skin (the one that comes with Eden v11.0) to run the script created above, and add an entry to the Exit MENU.</p>
+<p><img alt="EdenScreenShots-PowerMenu" src="images/EdenScreenShots-PowerMenu.png" /></p>
+<p>The dialog can be found in the file : <strong>DialogButtonMenu.xml</strong> in this folder: 'C:\Program Files\XBMC\addons\skin.confluence\720p  (If you a get a standard installation)</p>
+<div class="highlight"><pre><span class="nt">&lt;control</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">id=</span><span class="s">&quot;15&quot;</span><span class="nt">&gt;</span>             
+    <span class="nt">&lt;description&gt;</span>Shutdown NAS button<span class="nt">&lt;/description&gt;</span>
+    <span class="nt">&lt;width&gt;</span>340<span class="nt">&lt;/width&gt;</span>
+    <span class="nt">&lt;height&gt;</span>40<span class="nt">&lt;/height&gt;</span>
+    <span class="nt">&lt;textcolor&gt;</span>grey2<span class="nt">&lt;/textcolor&gt;</span>
+    <span class="nt">&lt;focusedcolor&gt;</span>white<span class="nt">&lt;/focusedcolor&gt;</span>
+    <span class="nt">&lt;align&gt;</span>center<span class="nt">&lt;/align&gt;</span>
+    <span class="nt">&lt;textwidth&gt;</span>290<span class="nt">&lt;/textwidth&gt;</span>
+    <span class="nt">&lt;texturefocus</span> <span class="na">border=</span><span class="s">&quot;25,5,25,5&quot;</span><span class="nt">&gt;</span>ShutdownButtonFocus.png<span class="nt">&lt;/texturefocus&gt;</span>
+    <span class="nt">&lt;texturenofocus</span> <span class="na">border=</span><span class="s">&quot;25,5,25,5&quot;</span><span class="nt">&gt;</span>ShutdownButtonNoFocus.png<span class="nt">&lt;/texturenofocus&gt;</span>
+    <span class="nt">&lt;onclick&gt;</span>XBMC.runscript(special://home/shutdown.py)<span class="nt">&lt;/onclick&gt;</span>           
+    <span class="nt">&lt;pulseonselect&gt;</span>no<span class="nt">&lt;/pulseonselect&gt;</span>               
+    <span class="nt">&lt;font&gt;</span>font13<span class="nt">&lt;/font&gt;</span>             
+    <span class="nt">&lt;label&gt;</span>Shutdwon NAS<span class="nt">&lt;/label&gt;</span>             
+    <span class="nt">&lt;visible&gt;</span>yes<span class="nt">&lt;/visible&gt;</span>          
+<span class="nt">&lt;/control&gt;</span>
+</pre></div>
+
+
+<p>Remember that <strong>special://home</strong> = C:\Documents and Settings[username]\Application Data\XBMC\ on Windows XP. 
+You can read more about special folder on the <a href="http://wiki.xbmc.org/index.php?title=Special_protocol">official wiki</a></p>
+<p>Put the Script in the special folder, and you're done !</p>
+<p><em>If you have installed another skin, you should look for where to modify.</em></p>
+    
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'blackhorus'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); 
+		dsq.type = 'text/javascript'; 
+		dsq.async = true;
+        dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+        </div>
+        
+<div class=footer>
+  <p>&copy; Copyright <script language="JavaScript">var date = new Date(); document.write(date.getFullYear());</script> by Black Horus</p>
+  <p> Powered by <a href="http://pypi.python.org/pypi/pelican/" target="_blank">Pelican</a>.  
+    <a href="https://github.com/fjavieralba/flasky">Theme</a>  by <a href="http://fjavieralba.com">fjavieralba</a>
+  </p> 
+  <p>
+    <div class=social style="font-size: 27px;">
+      <ul>
+
+
+        <a href="http://blackhorus.github.io/feeds/all.rss.xml" rel="alternate" title="Recent Blog Posts"><li> <i class="icon-rss icon-large"></i> </li></a>
+      </ul>
+    </div>
+  </p>
+</div>    </div>
+  </body>
+</html>

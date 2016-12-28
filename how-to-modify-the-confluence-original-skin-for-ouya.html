@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link href='https://fonts.googleapis.com/css?family=Noticia+Text:400,700' rel='stylesheet' type='text/css' />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="">
+    <meta name="author" content="Black Horus">
+
+    <title> How to modify the Confluence original Skin for Ouya | Blog </title>
+
+    <link rel="stylesheet" href="/theme/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/font-awesome.css" type="text/css"/>
+    <link rel="shortcut icon" href="/theme/images/favicon.ico">
+  </head>
+  <body>
+    <div class=container>
+<div class=navigation>
+    <ul>
+            <li><a href="/index.html">Blog</a> </li>
+            <li><a href="/archives.html">Archive</a> </li>
+            <li><a href="/pages/about-me.html">About</a> </li>
+    </ul>
+</div>
+<div class=separator></div>        
+        <div class=body>
+    <h1 class="title"> How to modify the Confluence original Skin for Ouya</h1>
+    <p class=date> Sun 15 March 2015 </p>
+    <p><img alt="OUYA" src="images/ouya.jpg" /></p>
+<p>I wanted to apply the same modification I made in my previous  <a href="http://scriptogr.am/blackhorus/post/how-to-shutdown-your-nas-from-xbmc">article</a> to add a shutdown entry to the Exit menu.</p>
+<p><img alt="Standard Menu" src="images/EdenScreenShots-PowerMenu.png" /></p>
+<p>I started by looking for the <strong>DialogButtonMenu.xml</strong> file as I did with the windows box, but it seems that Ouya (and Android in general) don't store their apk installation files in the sdcard. </p>
+<p>I tried to search on the Internet on where to find the xbmc fils (in my case, it was <strong>SPMC</strong> a fork to add some enhancements), and I found out, that it's stored in the /data folder, espacially in :</p>
+<div class="highlight"><pre>/data/data/com.semperpax.spmc/cache/apk/assets/addons/skin.confluence
+</pre></div>
+
+
+<p>But to get there, first you need to root the Ouya, and access with either ftp, or adb (or some other fancy way). For my case, I installed DroidFtp server, to gain an easy access with my FileZilla client.</p>
+<p>I modified the <strong>DialogButtonMenu.xml</strong> file by inserting this snippet of code before the Control node with id=14. Just make sure, also to modify id, to respect the order:</p>
+<div class="highlight"><pre><span class="nt">&lt;control</span> <span class="na">type=</span><span class="s">&quot;button&quot;</span> <span class="na">id=</span><span class="s">&quot;14&quot;</span><span class="nt">&gt;</span>             
+    <span class="nt">&lt;description&gt;</span>Shutdown NAS button<span class="nt">&lt;/description&gt;</span>
+    <span class="nt">&lt;width&gt;</span>340<span class="nt">&lt;/width&gt;</span>
+    <span class="nt">&lt;height&gt;</span>40<span class="nt">&lt;/height&gt;</span>
+    <span class="nt">&lt;textcolor&gt;</span>grey2<span class="nt">&lt;/textcolor&gt;</span>
+    <span class="nt">&lt;focusedcolor&gt;</span>white<span class="nt">&lt;/focusedcolor&gt;</span>
+    <span class="nt">&lt;align&gt;</span>center<span class="nt">&lt;/align&gt;</span>
+    <span class="nt">&lt;textwidth&gt;</span>290<span class="nt">&lt;/textwidth&gt;</span>
+    <span class="nt">&lt;texturefocus</span> <span class="na">border=</span><span class="s">&quot;25,5,25,5&quot;</span><span class="nt">&gt;</span>ShutdownButtonFocus.png<span class="nt">&lt;/texturefocus&gt;</span>
+    <span class="nt">&lt;texturenofocus</span> <span class="na">border=</span><span class="s">&quot;25,5,25,5&quot;</span><span class="nt">&gt;</span>ShutdownButtonNoFocus.png<span class="nt">&lt;/texturenofocus&gt;</span>
+    <span class="nt">&lt;onclick&gt;</span>XBMC.runscript(special://home/shutdown.py)<span class="nt">&lt;/onclick&gt;</span>           
+    <span class="nt">&lt;pulseonselect&gt;</span>no<span class="nt">&lt;/pulseonselect&gt;</span>               
+    <span class="nt">&lt;font&gt;</span>font13<span class="nt">&lt;/font&gt;</span>             
+    <span class="nt">&lt;label&gt;</span>Shutdwon NAS<span class="nt">&lt;/label&gt;</span>             
+    <span class="nt">&lt;visible&gt;</span>yes<span class="nt">&lt;/visible&gt;</span>          
+<span class="nt">&lt;/control&gt;</span>
+</pre></div>
+
+
+<p>And here's the final result on my SPMC 14.2, with the added entry to shutdown my NAS :</p>
+<p><img alt="SPMC Menu" src="images/SPMC14-shutdwon.jpg" /></p>
+    
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'blackhorus'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); 
+		dsq.type = 'text/javascript'; 
+		dsq.async = true;
+        dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+        </div>
+        
+<div class=footer>
+  <p>&copy; Copyright <script language="JavaScript">var date = new Date(); document.write(date.getFullYear());</script> by Black Horus</p>
+  <p> Powered by <a href="http://pypi.python.org/pypi/pelican/" target="_blank">Pelican</a>.  
+    <a href="https://github.com/fjavieralba/flasky">Theme</a>  by <a href="http://fjavieralba.com">fjavieralba</a>
+  </p> 
+  <p>
+    <div class=social style="font-size: 27px;">
+      <ul>
+
+
+        <a href="http://blackhorus.github.io/feeds/all.rss.xml" rel="alternate" title="Recent Blog Posts"><li> <i class="icon-rss icon-large"></i> </li></a>
+      </ul>
+    </div>
+  </p>
+</div>    </div>
+  </body>
+</html>

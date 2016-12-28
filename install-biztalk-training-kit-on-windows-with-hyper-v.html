@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link href='https://fonts.googleapis.com/css?family=Noticia+Text:400,700' rel='stylesheet' type='text/css' />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="">
+    <meta name="author" content="Black Horus">
+
+    <title> Install biztalk training kit on windows with Hyper-V. | Blog </title>
+
+    <link rel="stylesheet" href="/theme/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/font-awesome.css" type="text/css"/>
+    <link rel="shortcut icon" href="/theme/images/favicon.ico">
+  </head>
+  <body>
+    <div class=container>
+<div class=navigation>
+    <ul>
+            <li><a href="/index.html">Blog</a> </li>
+            <li><a href="/archives.html">Archive</a> </li>
+            <li><a href="/pages/about-me.html">About</a> </li>
+    </ul>
+</div>
+<div class=separator></div>        
+        <div class=body>
+    <h1 class="title"> Install biztalk training kit on windows with Hyper-V.</h1>
+    <p class=date> Fri 25 December 2015 </p>
+    <p><em>Please note that by default, Hyper-V is not activated and should be, to lunch the vm's.</em></p>
+<p>I struggled to make these lab working on my windows 8.1 machine. First, I get this error when trying to lunch the simple <strong>importVM.exe </strong>command as described by the official instruction you get when you download the training kit:</p>
+<div class="highlight"><pre>System.ApplicationException: Error while importing the Hyper-V configuration settings for bt10d-01. ---&gt; System.Management.ManagementException: Non trouvé
+</pre></div>
+
+
+<p>Then, I started to search on the internet, but no solution was offered to import proprely the vm's, all the articles I found were describing the fact that you should have a windows 2008 machine, or remove the configuration file (<a href="http://blogs.technet.com/b/rmilne/archive/2013/05/31/hyper-v-did-not-find-virtual-machine-to-import.aspx">xml file</a>)</p>
+<p>You should understand that the training kit comes with a master virtual machine (<strong>BizTalk2010Demo.vhd</strong> found inside the common folder). This vhd file host a windows 2008 OS, and everything you need to complete the hand-on lab (e.g. Visual studio, sharepoint, sql server,...). And beside it, there is a lot of differencing disks each on a seperate folder (<strong>bt10d-01</strong> to <strong>bt10d-19</strong>)</p>
+<blockquote>
+<p><strong>Note</strong> A differencing disk is a virtual hard disk (VHD) that stores changes made to another VHD or to the guest operating system. The purpose of differencing disks is to make it possible to maintain information about changes made so that they can be reversed if necessary. (<a href="http://whatis.techtarget.com/definition/differencing-disk">source</a>)</p>
+</blockquote>
+<p>The easiest way was to mount every differencing disk on its own VM. Instead of doing this manually, I managed to jot a simple script to do this for you. </p>
+<p>Here's a simple powershell script that I wrote to help you create a vm for every lab, and mount the supplied vhd disks. </p>
+<h3>Script</h3>
+<p>This script will create 17 virtual machine, each with 2GB of memory. It will attach the lab and the vhd for the demo files (<strong>bt10t-allfiles.vhd</strong>) in the created vm.</p>
+<p>Please note, that no error management was taking to create this script. So use it at you own risk! </p>
+<p>So, Copy &amp; paste this in a ps1 file, launch powershell as admin, and execute the file! you can also <a href="https://gist.githubusercontent.com/blackhorus/aaf27f47b040dcf3dbdd/raw/646b14f87cbfc131c1309eaec833c0f23c42761b/biztalk.ps1">download it</a>  </p>
+<div class="highlight"><pre><span class="nv">$absolutePath</span> <span class="p">=</span> <span class="s2">&quot;&quot;</span>
+
+<span class="c"># So we can execute this script.</span>
+<span class="nb">set-executionpolicy</span> <span class="n">remotesigned</span>
+<span class="cm">&lt;#  </span>
+<span class="cm">Source : https://social.technet.microsoft.com/Forums/en-US/464ff2b2-e24a-4c82-a367-07e60a43c1b8/how-to-use-a-browseforfolder-box-in-my-powershell-script?forum=ITCG</span>
+<span class="cm">#&gt;</span>
+<span class="k">function</span> <span class="nb">Select-Folder</span><span class="p">(</span><span class="nv">$message</span><span class="p">=</span><span class="s1">&#39;Select a folder&#39;</span><span class="p">,</span> <span class="nv">$path</span> <span class="p">=</span> <span class="n">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nv">$object</span> <span class="p">=</span> <span class="nb">New-Object</span> <span class="n">-comObject</span> <span class="n">Shell</span><span class="p">.</span><span class="n">Application</span>
+    <span class="nv">$folder</span> <span class="p">=</span> <span class="nv">$object</span><span class="p">.</span><span class="n">BrowseForFolder</span><span class="p">(</span><span class="n">0</span><span class="p">,</span> <span class="nv">$message</span><span class="p">,</span> <span class="n">0</span><span class="p">,</span> <span class="nv">$path</span><span class="p">)</span>  
+    <span class="k">if</span> <span class="p">(</span><span class="nv">$folder</span> <span class="o">-ne</span> <span class="nv">$null</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nv">$folder</span><span class="p">.</span><span class="n">self</span><span class="p">.</span><span class="n">Path</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cm">&lt;# </span>
+<span class="cm"> Should we point to the right path for every VM based on a number...</span>
+<span class="cm">#&gt;</span>
+<span class="k">function</span> <span class="n">ConstructPath</span><span class="p">(</span><span class="nv">$x</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="nv">$number</span> <span class="p">=</span> <span class="s2">&quot;{0:D2}&quot;</span> <span class="o">-f</span> <span class="nv">$x</span>
+    <span class="nv">$folder</span> <span class="p">=</span> <span class="nv">$absolutePath</span> <span class="p">+</span> <span class="s2">&quot;\bt10d-&quot;</span> <span class="p">+</span> <span class="nv">$number</span> <span class="p">+</span> <span class="s2">&quot;\Virtual Hard Disks\bt10d-&quot;</span><span class="p">+</span> <span class="nv">$number</span><span class="p">+</span><span class="s2">&quot;.vhd&quot;</span>
+    <span class="k">return</span> <span class="nv">$folder</span>
+<span class="p">}</span>
+
+<span class="cm">&lt;# </span>
+<span class="cm">Main entry for the script.</span>
+<span class="cm">#&gt;</span>
+<span class="nv">$absolutePath</span> <span class="p">=</span> <span class="nb">Select-Folder</span> <span class="s1">&#39;Select the folder where the folder vm&#39;&#39;s reside&#39;</span>
+<span class="k">If</span> <span class="p">(</span><span class="o">-not</span> <span class="nv">$absolutePath</span><span class="p">)</span> 
+    <span class="p">{</span> <span class="nb">Write-Host</span> <span class="s1">&#39;No folder was selected.&#39;</span> <span class="p">}</span>
+<span class="k">else</span> 
+<span class="p">{</span>
+    <span class="nv">$commonPath</span> <span class="p">=</span> <span class="nv">$absolutePath</span> <span class="p">+</span> <span class="s2">&quot;\common\bt10t-allfiles.vhd&quot;</span>
+
+    <span class="k">for</span><span class="p">(</span><span class="nv">$i</span><span class="p">=</span><span class="n">1</span><span class="p">;</span> <span class="nv">$i</span> <span class="o">-le</span> <span class="n">19</span><span class="p">;</span> <span class="nv">$i</span><span class="p">++)</span>
+    <span class="p">{</span>
+        <span class="c">#no folder for the 2 or 3 lab.</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nv">$i</span> <span class="o">-eq</span> <span class="n">2</span> <span class="o">-or</span> <span class="nv">$i</span> <span class="o">-eq</span> <span class="n">3</span><span class="p">)</span> <span class="p">{</span><span class="k">continue</span><span class="p">}</span>
+
+        <span class="c">#based on i construct the absoule path</span>
+        <span class="nv">$path</span> <span class="p">=</span> <span class="n">ConstructPath</span><span class="p">(</span><span class="nv">$i</span><span class="p">)</span>
+
+        <span class="nv">$LabName</span> <span class="p">=</span> <span class="s2">&quot;Lab-&quot;</span> <span class="p">+</span> <span class="s2">&quot;{0:D2}&quot;</span> <span class="o">-f</span> <span class="nv">$i</span>
+
+        <span class="c">#Create the VM, and add it the the disks.</span>
+        <span class="nb">New-VM</span> <span class="n">-Name</span> <span class="nv">$LabName</span> <span class="err">–</span><span class="n">MemoryStartupBytes</span> <span class="n">2GB</span>
+        <span class="nb">Add-VMHardDiskDrive</span> <span class="n">-VMName</span> <span class="nv">$LabName</span> <span class="n">-path</span> <span class="nv">$path</span>
+        <span class="nb">Add-VMHardDiskDrive</span> <span class="n">-VMName</span> <span class="nv">$LabName</span> <span class="n">-path</span> <span class="nv">$commonPath</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+    
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'blackhorus'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); 
+		dsq.type = 'text/javascript'; 
+		dsq.async = true;
+        dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+        </div>
+        
+<div class=footer>
+  <p>&copy; Copyright <script language="JavaScript">var date = new Date(); document.write(date.getFullYear());</script> by Black Horus</p>
+  <p> Powered by <a href="http://pypi.python.org/pypi/pelican/" target="_blank">Pelican</a>.  
+    <a href="https://github.com/fjavieralba/flasky">Theme</a>  by <a href="http://fjavieralba.com">fjavieralba</a>
+  </p> 
+  <p>
+    <div class=social style="font-size: 27px;">
+      <ul>
+
+
+        <a href="http://blackhorus.github.io/feeds/all.rss.xml" rel="alternate" title="Recent Blog Posts"><li> <i class="icon-rss icon-large"></i> </li></a>
+      </ul>
+    </div>
+  </p>
+</div>    </div>
+  </body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link href='https://fonts.googleapis.com/css?family=Noticia+Text:400,700' rel='stylesheet' type='text/css' />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="">
+    <meta name="author" content="Black Horus">
+
+    <title> How to configure Ouya to handle NFS share | Blog </title>
+
+    <link rel="stylesheet" href="/theme/css/style.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="/theme/css/font-awesome.css" type="text/css"/>
+    <link rel="shortcut icon" href="/theme/images/favicon.ico">
+  </head>
+  <body>
+    <div class=container>
+<div class=navigation>
+    <ul>
+            <li><a href="/index.html">Blog</a> </li>
+            <li><a href="/archives.html">Archive</a> </li>
+            <li><a href="/pages/about-me.html">About</a> </li>
+    </ul>
+</div>
+<div class=separator></div>        
+        <div class=body>
+    <h1 class="title"> How to configure Ouya to handle NFS share</h1>
+    <p class=date> Sat 20 December 2014 </p>
+    <p><img alt="OUYA" src="images/ouya.jpg" /></p>
+<p><em>The solution below is specific to the <a href="http://www.dlink.com/us/en/support/product/dns-323-sharecenter-2-bay-network-storage-enclosure">DNS323 NAS</a>. Somehow, it can  be easily tweaked to handle any NAS as long as it gets some NFS Support.</em></p>
+<p>From time to time, I just want to play some old emulated games, and I was really tired of copying the roms to the ouya sdcard just to play. So I looked for a method to share the folder of all my ROMS on my NAS to the Ouya, just to be able to play everything I want, the time I want it to.</p>
+<p>Here, in this tutorial I'll show you how, the steps needed to perform what I did to get it done.</p>
+<p><strong>Some Packages needed :</strong> </p>
+<ul>
+<li>Superuser </li>
+<li>Shell terminal Emulator, or Better terminal (Found out that this one support Ctrl+J as a remplacement for my keyboard Enter key) </li>
+<li>Universal Init.d <em>or</em> sh script runner</li>
+</ul>
+<h2><strong>1- Create an NFS share on our NAS</strong></h2>
+<p>Here I suppose that you get NFS already working on your NAS. If you don't please do so. You can grab good tutorial on how to do that. Please let me know, if you want me write something on how to install NFS on DNS-323.</p>
+<p>First step, Configure the share in the <em>/etc/exports</em> file</p>
+<div class="highlight"><pre>/mnt/HD_a2/Games 192.168.2.0/24(rw,no_root_squash,insecure)
+</pre></div>
+
+
+<p>In my case, I didn't bother to restrict the access. Every device in my LAN can have access to this share with a read/write permission. You can do so, or you can limit to the Ouya device. Check NFS manual on how to do this.</p>
+<p>restart the nfs deamon  :</p>
+<div class="highlight"><pre>/ffp/start/unfsd.sh  restart
+</pre></div>
+
+
+<p>In my case, to verify that the share is working, I used <a href="https://code.google.com/p/nekodrive/">nekodrive NFS Client</a> on windows. In the screenshot below, my NAS IP is 192.168.2.13, and we can see clearly that the share : /mnt/HD_a2/Games is working !</p>
+<p><img alt="NFS Connection" src="images/NFS_Connection.jpg" /></p>
+<h2><strong>2- Create the Mount Point</strong></h2>
+<p>Create a simple folder in the sdcard. This will serve as a mounting point, where Emulator get their contents :</p>
+<div class="highlight"><pre>/mnt/sdcard/games
+</pre></div>
+
+
+<h2><strong>3- Install BusyBox</strong></h2>
+<p>In my case, I just sideloaded an available apk of busybox found on the internet to Ouya, using the web uplaod page. </p>
+<p><img alt="BusyBox" src="images/BusyBox.png" /></p>
+<h2><strong>4- Mount the Drive with BusyBox</strong></h2>
+<p>From this great <a href="http://forum.xda-developers.com/showthread.php?t=718719">post</a> you must issue this command </p>
+<div class="highlight"><pre>busybox mount -o nolock,ro,hard,intr,vers=3 -t nfs 192.xxx.xxx.xxx:/your/nfs/share /mnt/sdcard/YourLocalFolder
+</pre></div>
+
+
+<p>I used rw, for the mounting option as some emulator need some writing permission to set their environnement (Mame4Droid)</p>
+<p>So, in my case, I just typed this command </p>
+<div class="highlight"><pre>busybox mount -o nolock,rw,hard,intr,vers=3 -t nfs 192.168.2.13:/mnt/HD_a2/Games /mnt/sdcard/games
+</pre></div>
+
+
+<h2><strong>5- Make this automatic</strong></h2>
+<p>If you a real gamer, and want this script to be run on every boot, you can sideload Universal Init.d (as Ouya don't have a real support for some exection of boot script) Or, if you a casual gamer, and wanna a simple method, you can use : sh script runner (v1.03). </p>
+<p><img alt="Script Loading" src="images/ScriptLoad.png" /></p>
+<p>You have to click on the U button, to load/save files. Here's the same command from the above step saved in a file to be executed each time I wanna play some games :</p>
+<p>In the next screen, don't forget to check Root access. SuperUser will popup to ask you if you want to allow the program to get root access.</p>
+<p><img alt="ScriptConfigure" src="images/ScriptConfigure.png" /></p>
+<h2><strong>6- Test the whole thing</strong></h2>
+<p>After successful execution, you can check with ES File Explorer that our sdcard/games folder point to the same NFS folder :</p>
+<p><img alt="EsFileExplorer" src="images/ESFileExplorer.png" /></p>
+<h2><strong>Some Tips:</strong></h2>
+<p>1- When you launch the Mame4Droid emulator, it'll try to create a Mame4Droid folder, and it'll ask you to put the rom inside it. I find this really cumbersome, as all my rom are already set up. Here's what I came up to avoid such process: Rename rom folder of MAME4Droid (to <em>roms.old</em> for exampe) and create a symbolic link with this command : </p>
+<div class="highlight"><pre>ln -s ../MameUI32/roms roms
+</pre></div>
+
+
+<p>2- First folder is my already setup of Mame32 with its rom folder containing the roms.<br/>
+Second folder is roms, the one that Mame4Droid use for loading roms.</p>
+<p>If you want to unmout, you can use this command, and repeat the step 4 so can unmount the folder automatically. For me, I don't care as I often shut down the ouya</p>
+<div class="highlight"><pre>busybox umount /mnt/HD_a2/Games
+</pre></div>
+    
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+    /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+    var disqus_shortname = 'blackhorus'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); 
+		dsq.type = 'text/javascript'; 
+		dsq.async = true;
+        dsq.src = 'https://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+        </div>
+        
+<div class=footer>
+  <p>&copy; Copyright <script language="JavaScript">var date = new Date(); document.write(date.getFullYear());</script> by Black Horus</p>
+  <p> Powered by <a href="http://pypi.python.org/pypi/pelican/" target="_blank">Pelican</a>.  
+    <a href="https://github.com/fjavieralba/flasky">Theme</a>  by <a href="http://fjavieralba.com">fjavieralba</a>
+  </p> 
+  <p>
+    <div class=social style="font-size: 27px;">
+      <ul>
+
+
+        <a href="http://blackhorus.github.io/feeds/all.rss.xml" rel="alternate" title="Recent Blog Posts"><li> <i class="icon-rss icon-large"></i> </li></a>
+      </ul>
+    </div>
+  </p>
+</div>    </div>
+  </body>
+</html>

@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Blog</title><link>http://blackhorus.github.io/</link><description></description><atom:link href="http://blackhorus.github.io/feeds/uncategorized.rss.xml" rel="self"></atom:link><lastBuildDate>Fri, 25 Dec 2015 00:00:00 -0500</lastBuildDate><item><title>Install biztalk training kit on windows with Hyper-V.</title><link>http://blackhorus.github.io/install-biztalk-training-kit-on-windows-with-hyper-v.html</link><description>&lt;p&gt;&lt;em&gt;Please note that by default, Hyper-V is not activated and should be, to lunch the vm's.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;I struggled to make these lab working on my windows 8.1 machine. First, I get this error when trying to lunch the simple &lt;strong&gt;importVM.exe &lt;/strong&gt;command as described by the official instruction you get when you download the training kit:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;System.ApplicationException: Error while importing the Hyper-V configuration settings for bt10d-01. ---&amp;gt; System.Management.ManagementException: Non trouvé
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Then, I started to search on the internet, but no solution was offered to import proprely the vm's, all the articles I found were describing the fact that you should have a windows 2008 machine, or remove the configuration file (&lt;a href="http://blogs.technet.com/b/rmilne/archive/2013/05/31/hyper-v-did-not-find-virtual-machine-to-import.aspx"&gt;xml file&lt;/a&gt;)&lt;/p&gt;
+&lt;p&gt;You should understand that the training kit comes with a master virtual machine (&lt;strong&gt;BizTalk2010Demo.vhd&lt;/strong&gt; found inside the common folder). This vhd file host a windows 2008 OS, and everything you need to complete the hand-on lab (e.g. Visual studio, sharepoint, sql server,...). And beside it, there is a lot of differencing disks each on a seperate folder (&lt;strong&gt;bt10d-01&lt;/strong&gt; to &lt;strong&gt;bt10d-19&lt;/strong&gt;)&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt; A differencing disk is a virtual hard disk (VHD) that stores changes made to another VHD or to the guest operating system. The purpose of differencing disks is to make it possible to maintain information about changes made so that they can be reversed if necessary. (&lt;a href="http://whatis.techtarget.com/definition/differencing-disk"&gt;source&lt;/a&gt;)&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;The easiest way was to mount every differencing disk on its own VM. Instead of doing this manually, I managed to jot a simple script to do this for you. &lt;/p&gt;
+&lt;p&gt;Here's a simple powershell script that I wrote to help you create a vm for every lab, and mount the supplied vhd disks. &lt;/p&gt;
+&lt;h3&gt;Script&lt;/h3&gt;
+&lt;p&gt;This script will create 17 virtual machine, each with 2GB of memory. It will attach the lab and the vhd for the demo files (&lt;strong&gt;bt10t-allfiles.vhd&lt;/strong&gt;) in the created vm.&lt;/p&gt;
+&lt;p&gt;Please note, that no error management was taking to create this script. So use it at you own risk! &lt;/p&gt;
+&lt;p&gt;So, Copy &amp;amp; paste this in a ps1 file, launch powershell as admin, and execute the file! you can also &lt;a href="https://gist.githubusercontent.com/blackhorus/aaf27f47b040dcf3dbdd/raw/646b14f87cbfc131c1309eaec833c0f23c42761b/biztalk.ps1"&gt;download it&lt;/a&gt;  &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nv"&gt;$absolutePath&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;&amp;quot;&lt;/span&gt;
+
+&lt;span class="c"&gt;# So we can execute this script.&lt;/span&gt;
+&lt;span class="nb"&gt;set-executionpolicy&lt;/span&gt; &lt;span class="n"&gt;remotesigned&lt;/span&gt;
+&lt;span class="cm"&gt;&amp;lt;#  &lt;/span&gt;
+&lt;span class="cm"&gt;Source : https://social.technet.microsoft.com/Forums/en-US/464ff2b2-e24a-4c82-a367-07e60a43c1b8/how-to-use-a-browseforfolder-box-in-my-powershell-script?forum=ITCG&lt;/span&gt;
+&lt;span class="cm"&gt;#&amp;gt;&lt;/span&gt;
+&lt;span class="k"&gt;function&lt;/span&gt; &lt;span class="nb"&gt;Select-Folder&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$message&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Select a folder&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;$path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="n"&gt;0&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;$object&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;New-Object&lt;/span&gt; &lt;span class="n"&gt;-comObject&lt;/span&gt; &lt;span class="n"&gt;Shell&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Application&lt;/span&gt;
+    &lt;span class="nv"&gt;$folder&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="nv"&gt;$object&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;BrowseForFolder&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;$message&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;0&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="nv"&gt;$path&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;  
+    &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$folder&lt;/span&gt; &lt;span class="o"&gt;-ne&lt;/span&gt; &lt;span class="nv"&gt;$null&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="nv"&gt;$folder&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;self&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;Path&lt;/span&gt;
+        &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="cm"&gt;&amp;lt;# &lt;/span&gt;
+&lt;span class="cm"&gt; Should we point to the right path for every VM based on a number...&lt;/span&gt;
+&lt;span class="cm"&gt;#&amp;gt;&lt;/span&gt;
+&lt;span class="k"&gt;function&lt;/span&gt; &lt;span class="n"&gt;ConstructPath&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$x&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;$number&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;{0:D2}&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;-f&lt;/span&gt; &lt;span class="nv"&gt;$x&lt;/span&gt;
+    &lt;span class="nv"&gt;$folder&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="nv"&gt;$absolutePath&lt;/span&gt; &lt;span class="p"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;\bt10d-&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;+&lt;/span&gt; &lt;span class="nv"&gt;$number&lt;/span&gt; &lt;span class="p"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;\Virtual Hard Disks\bt10d-&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;+&lt;/span&gt; &lt;span class="nv"&gt;$number&lt;/span&gt;&lt;span class="p"&gt;+&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;.vhd&amp;quot;&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="nv"&gt;$folder&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+
+&lt;span class="cm"&gt;&amp;lt;# &lt;/span&gt;
+&lt;span class="cm"&gt;Main entry for the script.&lt;/span&gt;
+&lt;span class="cm"&gt;#&amp;gt;&lt;/span&gt;
+&lt;span class="nv"&gt;$absolutePath&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="nb"&gt;Select-Folder&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;Select the folder where the folder vm&amp;#39;&amp;#39;s reside&amp;#39;&lt;/span&gt;
+&lt;span class="k"&gt;If&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="o"&gt;-not&lt;/span&gt; &lt;span class="nv"&gt;$absolutePath&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; 
+    &lt;span class="p"&gt;{&lt;/span&gt; &lt;span class="nb"&gt;Write-Host&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;No folder was selected.&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="k"&gt;else&lt;/span&gt; 
+&lt;span class="p"&gt;{&lt;/span&gt;
+    &lt;span class="nv"&gt;$commonPath&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="nv"&gt;$absolutePath&lt;/span&gt; &lt;span class="p"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;\common\bt10t-allfiles.vhd&amp;quot;&lt;/span&gt;
+
+    &lt;span class="k"&gt;for&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="p"&gt;=&lt;/span&gt;&lt;span class="n"&gt;1&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="nv"&gt;$i&lt;/span&gt; &lt;span class="o"&gt;-le&lt;/span&gt; &lt;span class="n"&gt;19&lt;/span&gt;&lt;span class="p"&gt;;&lt;/span&gt; &lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="p"&gt;++)&lt;/span&gt;
+    &lt;span class="p"&gt;{&lt;/span&gt;
+        &lt;span class="c"&gt;#no folder for the 2 or 3 lab.&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt; &lt;span class="o"&gt;-eq&lt;/span&gt; &lt;span class="n"&gt;2&lt;/span&gt; &lt;span class="o"&gt;-or&lt;/span&gt; &lt;span class="nv"&gt;$i&lt;/span&gt; &lt;span class="o"&gt;-eq&lt;/span&gt; &lt;span class="n"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="k"&gt;continue&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+
+        &lt;span class="c"&gt;#based on i construct the absoule path&lt;/span&gt;
+        &lt;span class="nv"&gt;$path&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="n"&gt;ConstructPath&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nv"&gt;$i&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+        &lt;span class="nv"&gt;$LabName&lt;/span&gt; &lt;span class="p"&gt;=&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;Lab-&amp;quot;&lt;/span&gt; &lt;span class="p"&gt;+&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;{0:D2}&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;-f&lt;/span&gt; &lt;span class="nv"&gt;$i&lt;/span&gt;
+
+        &lt;span class="c"&gt;#Create the VM, and add it the the disks.&lt;/span&gt;
+        &lt;span class="nb"&gt;New-VM&lt;/span&gt; &lt;span class="n"&gt;-Name&lt;/span&gt; &lt;span class="nv"&gt;$LabName&lt;/span&gt; &lt;span class="err"&gt;–&lt;/span&gt;&lt;span class="n"&gt;MemoryStartupBytes&lt;/span&gt; &lt;span class="n"&gt;2GB&lt;/span&gt;
+        &lt;span class="nb"&gt;Add-VMHardDiskDrive&lt;/span&gt; &lt;span class="n"&gt;-VMName&lt;/span&gt; &lt;span class="nv"&gt;$LabName&lt;/span&gt; &lt;span class="n"&gt;-path&lt;/span&gt; &lt;span class="nv"&gt;$path&lt;/span&gt;
+        &lt;span class="nb"&gt;Add-VMHardDiskDrive&lt;/span&gt; &lt;span class="n"&gt;-VMName&lt;/span&gt; &lt;span class="nv"&gt;$LabName&lt;/span&gt; &lt;span class="n"&gt;-path&lt;/span&gt; &lt;span class="nv"&gt;$commonPath&lt;/span&gt;
+    &lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Fri, 25 Dec 2015 00:00:00 -0500</pubDate><guid>tag:blackhorus.github.io,2015-12-25:install-biztalk-training-kit-on-windows-with-hyper-v.html</guid></item><item><title>How to modify the Confluence original Skin for Ouya</title><link>http://blackhorus.github.io/how-to-modify-the-confluence-original-skin-for-ouya.html</link><description>&lt;p&gt;&lt;img alt="OUYA" src="images/ouya.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;I wanted to apply the same modification I made in my previous  &lt;a href="http://scriptogr.am/blackhorus/post/how-to-shutdown-your-nas-from-xbmc"&gt;article&lt;/a&gt; to add a shutdown entry to the Exit menu.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Standard Menu" src="images/EdenScreenShots-PowerMenu.png" /&gt;&lt;/p&gt;
+&lt;p&gt;I started by looking for the &lt;strong&gt;DialogButtonMenu.xml&lt;/strong&gt; file as I did with the windows box, but it seems that Ouya (and Android in general) don't store their apk installation files in the sdcard. &lt;/p&gt;
+&lt;p&gt;I tried to search on the Internet on where to find the xbmc fils (in my case, it was &lt;strong&gt;SPMC&lt;/strong&gt; a fork to add some enhancements), and I found out, that it's stored in the /data folder, espacially in :&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;/data/data/com.semperpax.spmc/cache/apk/assets/addons/skin.confluence
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;But to get there, first you need to root the Ouya, and access with either ftp, or adb (or some other fancy way). For my case, I installed DroidFtp server, to gain an easy access with my FileZilla client.&lt;/p&gt;
+&lt;p&gt;I modified the &lt;strong&gt;DialogButtonMenu.xml&lt;/strong&gt; file by inserting this snippet of code before the Control node with id=14. Just make sure, also to modify id, to respect the order:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;&amp;lt;control&lt;/span&gt; &lt;span class="na"&gt;type=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;button&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;id=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;14&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;             
+    &lt;span class="nt"&gt;&amp;lt;description&amp;gt;&lt;/span&gt;Shutdown NAS button&lt;span class="nt"&gt;&amp;lt;/description&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;width&amp;gt;&lt;/span&gt;340&lt;span class="nt"&gt;&amp;lt;/width&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;height&amp;gt;&lt;/span&gt;40&lt;span class="nt"&gt;&amp;lt;/height&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;textcolor&amp;gt;&lt;/span&gt;grey2&lt;span class="nt"&gt;&amp;lt;/textcolor&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;focusedcolor&amp;gt;&lt;/span&gt;white&lt;span class="nt"&gt;&amp;lt;/focusedcolor&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;align&amp;gt;&lt;/span&gt;center&lt;span class="nt"&gt;&amp;lt;/align&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;textwidth&amp;gt;&lt;/span&gt;290&lt;span class="nt"&gt;&amp;lt;/textwidth&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;texturefocus&lt;/span&gt; &lt;span class="na"&gt;border=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;25,5,25,5&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;ShutdownButtonFocus.png&lt;span class="nt"&gt;&amp;lt;/texturefocus&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;texturenofocus&lt;/span&gt; &lt;span class="na"&gt;border=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;25,5,25,5&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;ShutdownButtonNoFocus.png&lt;span class="nt"&gt;&amp;lt;/texturenofocus&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;onclick&amp;gt;&lt;/span&gt;XBMC.runscript(special://home/shutdown.py)&lt;span class="nt"&gt;&amp;lt;/onclick&amp;gt;&lt;/span&gt;           
+    &lt;span class="nt"&gt;&amp;lt;pulseonselect&amp;gt;&lt;/span&gt;no&lt;span class="nt"&gt;&amp;lt;/pulseonselect&amp;gt;&lt;/span&gt;               
+    &lt;span class="nt"&gt;&amp;lt;font&amp;gt;&lt;/span&gt;font13&lt;span class="nt"&gt;&amp;lt;/font&amp;gt;&lt;/span&gt;             
+    &lt;span class="nt"&gt;&amp;lt;label&amp;gt;&lt;/span&gt;Shutdwon NAS&lt;span class="nt"&gt;&amp;lt;/label&amp;gt;&lt;/span&gt;             
+    &lt;span class="nt"&gt;&amp;lt;visible&amp;gt;&lt;/span&gt;yes&lt;span class="nt"&gt;&amp;lt;/visible&amp;gt;&lt;/span&gt;          
+&lt;span class="nt"&gt;&amp;lt;/control&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;And here's the final result on my SPMC 14.2, with the added entry to shutdown my NAS :&lt;/p&gt;
+&lt;p&gt;&lt;img alt="SPMC Menu" src="images/SPMC14-shutdwon.jpg" /&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Sun, 15 Mar 2015 00:00:00 -0400</pubDate><guid>tag:blackhorus.github.io,2015-03-15:how-to-modify-the-confluence-original-skin-for-ouya.html</guid></item><item><title>How to configure Ouya to handle NFS share</title><link>http://blackhorus.github.io/how-to-configure-ouya-to-handle-nfs-share.html</link><description>&lt;p&gt;&lt;img alt="OUYA" src="images/ouya.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;The solution below is specific to the &lt;a href="http://www.dlink.com/us/en/support/product/dns-323-sharecenter-2-bay-network-storage-enclosure"&gt;DNS323 NAS&lt;/a&gt;. Somehow, it can  be easily tweaked to handle any NAS as long as it gets some NFS Support.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;From time to time, I just want to play some old emulated games, and I was really tired of copying the roms to the ouya sdcard just to play. So I looked for a method to share the folder of all my ROMS on my NAS to the Ouya, just to be able to play everything I want, the time I want it to.&lt;/p&gt;
+&lt;p&gt;Here, in this tutorial I'll show you how, the steps needed to perform what I did to get it done.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Some Packages needed :&lt;/strong&gt; &lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Superuser &lt;/li&gt;
+&lt;li&gt;Shell terminal Emulator, or Better terminal (Found out that this one support Ctrl+J as a remplacement for my keyboard Enter key) &lt;/li&gt;
+&lt;li&gt;Universal Init.d &lt;em&gt;or&lt;/em&gt; sh script runner&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2&gt;&lt;strong&gt;1- Create an NFS share on our NAS&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;Here I suppose that you get NFS already working on your NAS. If you don't please do so. You can grab good tutorial on how to do that. Please let me know, if you want me write something on how to install NFS on DNS-323.&lt;/p&gt;
+&lt;p&gt;First step, Configure the share in the &lt;em&gt;/etc/exports&lt;/em&gt; file&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;/mnt/HD_a2/Games 192.168.2.0/24(rw,no_root_squash,insecure)
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In my case, I didn't bother to restrict the access. Every device in my LAN can have access to this share with a read/write permission. You can do so, or you can limit to the Ouya device. Check NFS manual on how to do this.&lt;/p&gt;
+&lt;p&gt;restart the nfs deamon  :&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;/ffp/start/unfsd.sh  restart
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;In my case, to verify that the share is working, I used &lt;a href="https://code.google.com/p/nekodrive/"&gt;nekodrive NFS Client&lt;/a&gt; on windows. In the screenshot below, my NAS IP is 192.168.2.13, and we can see clearly that the share : /mnt/HD_a2/Games is working !&lt;/p&gt;
+&lt;p&gt;&lt;img alt="NFS Connection" src="images/NFS_Connection.jpg" /&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;2- Create the Mount Point&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;Create a simple folder in the sdcard. This will serve as a mounting point, where Emulator get their contents :&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;/mnt/sdcard/games
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;&lt;strong&gt;3- Install BusyBox&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;In my case, I just sideloaded an available apk of busybox found on the internet to Ouya, using the web uplaod page. &lt;/p&gt;
+&lt;p&gt;&lt;img alt="BusyBox" src="images/BusyBox.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;4- Mount the Drive with BusyBox&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;From this great &lt;a href="http://forum.xda-developers.com/showthread.php?t=718719"&gt;post&lt;/a&gt; you must issue this command &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;busybox mount -o nolock,ro,hard,intr,vers=3 -t nfs 192.xxx.xxx.xxx:/your/nfs/share /mnt/sdcard/YourLocalFolder
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;I used rw, for the mounting option as some emulator need some writing permission to set their environnement (Mame4Droid)&lt;/p&gt;
+&lt;p&gt;So, in my case, I just typed this command &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;busybox mount -o nolock,rw,hard,intr,vers=3 -t nfs 192.168.2.13:/mnt/HD_a2/Games /mnt/sdcard/games
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;h2&gt;&lt;strong&gt;5- Make this automatic&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;If you a real gamer, and want this script to be run on every boot, you can sideload Universal Init.d (as Ouya don't have a real support for some exection of boot script) Or, if you a casual gamer, and wanna a simple method, you can use : sh script runner (v1.03). &lt;/p&gt;
+&lt;p&gt;&lt;img alt="Script Loading" src="images/ScriptLoad.png" /&gt;&lt;/p&gt;
+&lt;p&gt;You have to click on the U button, to load/save files. Here's the same command from the above step saved in a file to be executed each time I wanna play some games :&lt;/p&gt;
+&lt;p&gt;In the next screen, don't forget to check Root access. SuperUser will popup to ask you if you want to allow the program to get root access.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="ScriptConfigure" src="images/ScriptConfigure.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;6- Test the whole thing&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;After successful execution, you can check with ES File Explorer that our sdcard/games folder point to the same NFS folder :&lt;/p&gt;
+&lt;p&gt;&lt;img alt="EsFileExplorer" src="images/ESFileExplorer.png" /&gt;&lt;/p&gt;
+&lt;h2&gt;&lt;strong&gt;Some Tips:&lt;/strong&gt;&lt;/h2&gt;
+&lt;p&gt;1- When you launch the Mame4Droid emulator, it'll try to create a Mame4Droid folder, and it'll ask you to put the rom inside it. I find this really cumbersome, as all my rom are already set up. Here's what I came up to avoid such process: Rename rom folder of MAME4Droid (to &lt;em&gt;roms.old&lt;/em&gt; for exampe) and create a symbolic link with this command : &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;ln -s ../MameUI32/roms roms
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;2- First folder is my already setup of Mame32 with its rom folder containing the roms.&lt;br/&gt;
+Second folder is roms, the one that Mame4Droid use for loading roms.&lt;/p&gt;
+&lt;p&gt;If you want to unmout, you can use this command, and repeat the step 4 so can unmount the folder automatically. For me, I don't care as I often shut down the ouya&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;busybox umount /mnt/HD_a2/Games
+&lt;/pre&gt;&lt;/div&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Sat, 20 Dec 2014 00:00:00 -0500</pubDate><guid>tag:blackhorus.github.io,2014-12-20:how-to-configure-ouya-to-handle-nfs-share.html</guid></item><item><title>UTF Encoding simple diagram</title><link>http://blackhorus.github.io/utf-encoding-simple-diagram.html</link><description>&lt;p&gt;&lt;img alt="UTF" src="images/UTF.png" /&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Wed, 12 Nov 2014 00:00:00 -0500</pubDate><guid>tag:blackhorus.github.io,2014-11-12:utf-encoding-simple-diagram.html</guid></item><item><title>Regarder la télé française depuis l'étranger Acte II.</title><link>http://blackhorus.github.io/regarder-la-tele-francaise-depuis-letranger-acte-ii.html</link><description>&lt;p&gt;Dans cet article, j'essayerai de présenter une autre alternative pour regarder pas mal de télé francophone (Française, Québecoise...)&lt;/p&gt;
+&lt;p&gt;On aura besoin de deux outils :&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="http://captvty.fr/"&gt;Captvty&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="http://www.securitykiss.com/index.php?lang=fr"&gt;SecurityKiss&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Comme le précédent article, on aura pas le choix de passer par un VPN. Une sorte de service qui nous permet de changer de pays de connexion (&lt;em&gt;pour faire simple&lt;/em&gt;). Il exsite pas mal d'offre sur le marché, pour ma part j'ai choisi SecurtiyKiss qui propose une offre gratuite de 300 mégaoctet par jour. &lt;/p&gt;
+&lt;p&gt;Une fois inscrit sur le site, je vous propose de télécharger leur outil &lt;strong&gt;SecurtiyKiss Tunnel&lt;/strong&gt; qui facilite pas mal les chose en matière de connexion à leur service &lt;em&gt;(On pourrait s'en passer et créer nous la connexion VPN à leur site, mais pourquoi se compliquer la vie)&lt;/em&gt;. &lt;/p&gt;
+&lt;p&gt;&lt;img alt="SecurtyKiss" src="images/SecurtyKiss.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;L'outil propose un nombre de pays limités. Parmi ces choix, se trouve le pays qui nous intéresse qui est la France !&lt;/p&gt;
+&lt;p&gt;&lt;img alt="ListServers" src="images/ListServers.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;Ensuite, on change le pays pour &lt;strong&gt;France&lt;/strong&gt; et le tour est joué.
+&lt;img alt="" src="images/ChangeServer.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;Maintenant, on peut se connecter sur les service comme Pluzz, et autre service de VOD pour mater du contenu français !&lt;/p&gt;
+&lt;p&gt;Moi, personelllement, je préfère télécharger mes émission pour les regarder plus tard. J'ai trouvé un outil pour ça qui se nomme Captvty.&lt;/p&gt;
+&lt;p&gt;Par exemple, dans le screenshot suivant, j'ai choisi de téléchargé l'émission d'Arthur : Les enfants de la télé :&lt;/p&gt;
+&lt;p&gt;&lt;img alt="Captvty" src="images/Captvty.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Astuce :&lt;/strong&gt; Lance le téléchargement de tous les fichiers en même temps, pour bypasser la limite des 300 méga journalier. Et oui, une fois un téléchargement commencé, leur serveur ne peut vous arrêter ! &lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Sun, 27 Oct 2013 00:00:00 -0400</pubDate><guid>tag:blackhorus.github.io,2013-10-27:regarder-la-tele-francaise-depuis-letranger-acte-ii.html</guid></item><item><title>How to shutdown your NAS from XBMC</title><link>http://blackhorus.github.io/how-to-shutdown-your-nas-from-xbmc.html</link><description>&lt;p&gt;&lt;img alt="DNS323" src="http://www.dlink.com/-/media/Images/Products/DNS/323/DNS%20323%20A1.png?h=230&amp;amp;w=408&amp;amp;crop=1&amp;amp;rc=5" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;The solution below is specific to the &lt;a href="http://www.dlink.com/us/en/support/product/dns-323-sharecenter-2-bay-network-storage-enclosure"&gt;DNS323 NAS&lt;/a&gt;, but can be modified to handle your NAS if it gets a standard web interface where you get the option to shutdown.&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;I always wanted to shutdown my nas from XBMC without going through the web interface.  First, I started by looking for some prexisting solution with no sucess. So, I decided to create one. &lt;/p&gt;
+&lt;p&gt;On my Quest to find a solution, I managed to stumble over a batch script on this website : &lt;a href="http://forums.dlink.com/index.php?topic=8362.0"&gt;http://forums.dlink.com/index.php?topic=8362.0&lt;/a&gt;. &lt;/p&gt;
+&lt;p&gt;It was easy to convert it to python. &lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="kn"&gt;import&lt;/span&gt; &lt;span class="nn"&gt;urllib&lt;/span&gt;&lt;span class="o"&gt;,&lt;/span&gt;&lt;span class="nn"&gt;urllib2&lt;/span&gt; &lt;span class="o"&gt;,&lt;/span&gt; &lt;span class="nn"&gt;re&lt;/span&gt;
+
+&lt;span class="n"&gt;NAME&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;admin&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;PASSWD&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;pass&amp;quot;&lt;/span&gt;
+&lt;span class="n"&gt;IP&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;192.168.2.13&amp;quot;&lt;/span&gt;
+
+&lt;span class="n"&gt;Base_URL&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;http://&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;IP&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;/goform/formLogin?f_login_type=0&amp;amp;f_LOGIN_NAME=&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;NAME&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;&amp;amp;f_LOGIN_PASSWD=&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;PASSWD&lt;/span&gt;
+&lt;span class="n"&gt;shutdown_URL&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;http://&amp;quot;&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;IP&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="s"&gt;&amp;quot;/goform/sysShutDown?shootdown&amp;quot;&lt;/span&gt;
+
+&lt;span class="c"&gt;#Login screen&lt;/span&gt;
+&lt;span class="n"&gt;WebSock&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urllib&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;urlopen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;Base_URL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;WebHTML&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;WebSock&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="c"&gt;#shutdown screen&lt;/span&gt;
+&lt;span class="n"&gt;WebSock&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;urllib&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;urlopen&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;shutdown_URL&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;WebHTML&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;WebSock&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;read&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+&lt;span class="n"&gt;WebSock&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;close&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;&lt;em&gt;Warning : You have to be logged out from the DNS323 web interface or this script will fail to execute, as some gently guy post it!&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;You can run it, to test for its success &lt;em&gt;(Replace username, password and ip of your nas where needed)&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Next, head to XBMC to add a menu entry. Modify the Confluene skin (the one that comes with Eden v11.0) to run the script created above, and add an entry to the Exit MENU.&lt;/p&gt;
+&lt;p&gt;&lt;img alt="EdenScreenShots-PowerMenu" src="images/EdenScreenShots-PowerMenu.png" /&gt;&lt;/p&gt;
+&lt;p&gt;The dialog can be found in the file : &lt;strong&gt;DialogButtonMenu.xml&lt;/strong&gt; in this folder: 'C:\Program Files\XBMC\addons\skin.confluence\720p  (If you a get a standard installation)&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span class="nt"&gt;&amp;lt;control&lt;/span&gt; &lt;span class="na"&gt;type=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;button&amp;quot;&lt;/span&gt; &lt;span class="na"&gt;id=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;15&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;             
+    &lt;span class="nt"&gt;&amp;lt;description&amp;gt;&lt;/span&gt;Shutdown NAS button&lt;span class="nt"&gt;&amp;lt;/description&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;width&amp;gt;&lt;/span&gt;340&lt;span class="nt"&gt;&amp;lt;/width&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;height&amp;gt;&lt;/span&gt;40&lt;span class="nt"&gt;&amp;lt;/height&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;textcolor&amp;gt;&lt;/span&gt;grey2&lt;span class="nt"&gt;&amp;lt;/textcolor&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;focusedcolor&amp;gt;&lt;/span&gt;white&lt;span class="nt"&gt;&amp;lt;/focusedcolor&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;align&amp;gt;&lt;/span&gt;center&lt;span class="nt"&gt;&amp;lt;/align&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;textwidth&amp;gt;&lt;/span&gt;290&lt;span class="nt"&gt;&amp;lt;/textwidth&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;texturefocus&lt;/span&gt; &lt;span class="na"&gt;border=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;25,5,25,5&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;ShutdownButtonFocus.png&lt;span class="nt"&gt;&amp;lt;/texturefocus&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;texturenofocus&lt;/span&gt; &lt;span class="na"&gt;border=&lt;/span&gt;&lt;span class="s"&gt;&amp;quot;25,5,25,5&amp;quot;&lt;/span&gt;&lt;span class="nt"&gt;&amp;gt;&lt;/span&gt;ShutdownButtonNoFocus.png&lt;span class="nt"&gt;&amp;lt;/texturenofocus&amp;gt;&lt;/span&gt;
+    &lt;span class="nt"&gt;&amp;lt;onclick&amp;gt;&lt;/span&gt;XBMC.runscript(special://home/shutdown.py)&lt;span class="nt"&gt;&amp;lt;/onclick&amp;gt;&lt;/span&gt;           
+    &lt;span class="nt"&gt;&amp;lt;pulseonselect&amp;gt;&lt;/span&gt;no&lt;span class="nt"&gt;&amp;lt;/pulseonselect&amp;gt;&lt;/span&gt;               
+    &lt;span class="nt"&gt;&amp;lt;font&amp;gt;&lt;/span&gt;font13&lt;span class="nt"&gt;&amp;lt;/font&amp;gt;&lt;/span&gt;             
+    &lt;span class="nt"&gt;&amp;lt;label&amp;gt;&lt;/span&gt;Shutdwon NAS&lt;span class="nt"&gt;&amp;lt;/label&amp;gt;&lt;/span&gt;             
+    &lt;span class="nt"&gt;&amp;lt;visible&amp;gt;&lt;/span&gt;yes&lt;span class="nt"&gt;&amp;lt;/visible&amp;gt;&lt;/span&gt;          
+&lt;span class="nt"&gt;&amp;lt;/control&amp;gt;&lt;/span&gt;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+&lt;p&gt;Remember that &lt;strong&gt;special://home&lt;/strong&gt; = C:\Documents and Settings[username]\Application Data\XBMC\ on Windows XP. 
+You can read more about special folder on the &lt;a href="http://wiki.xbmc.org/index.php?title=Special_protocol"&gt;official wiki&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Put the Script in the special folder, and you're done !&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;If you have installed another skin, you should look for where to modify.&lt;/em&gt;&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Tue, 19 Mar 2013 00:00:00 -0400</pubDate><guid>tag:blackhorus.github.io,2013-03-19:how-to-shutdown-your-nas-from-xbmc.html</guid></item><item><title>Comment regarder la télé française depuis l'étranger</title><link>http://blackhorus.github.io/comment-regarder-la-tele-francaise-depuis-letranger.html</link><description>&lt;p&gt;À plusieurs reprises, je voulais regarder mes emissions préférées depuis l'étranger. J'en ai essayé plusieurs méthodes qui se sont avérées plus ou moins fonctionnelles. Récément, en lisant un article dans le magazine &lt;em&gt;(réf à fournir plus tard)&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img alt="proxy" src="images/chrispc_free_anonymous_proxy.jpg" /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href="http://www.chris-pc.com/proxy/index.html"&gt;Chris Pc Free &lt;/a&gt; se trouve être la solution à mes détresses de téléphage. Facile à installer ! &lt;/p&gt;
+&lt;p&gt;Une fois le logiciel lancé, il suffit de choisir France (bien sûr, un autre pays si vous voulez regarder d'autres chaînes de d'autres pays), et de cliquer sur connect.&lt;/p&gt;
+&lt;p&gt;Bien sûr, si votre connexion se trouve être d'un lenteur visible, à savoir des coupures à chaque 2 secondes. Je vous conseille de télécharger
+la vidéo et de la regarder à l'aise une fois terminé. Pour cela plusieurs alternatives, soit des logiciels comme Internet Download Manager et cie, ou des pluggins qui s'ajoutent à vos browser.&lt;/p&gt;
+&lt;div style="float: left;margin:15px"&gt;
+&lt;img src="images/DownloadHelper1.jpg"&gt;
+&lt;/div&gt;
+
+&lt;p&gt;De mon côté, je me sert de l'extension de firefox, &lt;a href="http://www.downloadhelper.net/"&gt;downloadhelper.&lt;/a&gt; Je trouve cette extension d'une facilité à pouvoir me télécharger toutes les videos de n'importe quel site.&lt;/p&gt;</description><dc:creator xmlns:dc="http://purl.org/dc/elements/1.1/">Black Horus</dc:creator><pubDate>Fri, 30 Nov 2012 00:00:00 -0500</pubDate><guid>tag:blackhorus.github.io,2012-11-30:comment-regarder-la-tele-francaise-depuis-letranger.html</guid></item></channel></rss>
