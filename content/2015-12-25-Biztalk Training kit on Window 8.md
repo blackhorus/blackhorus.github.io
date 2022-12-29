@@ -32,21 +32,21 @@ So, Copy & paste this in a ps1 file, launch powershell as admin, and execute the
 ```powershell
 $absolutePath = ""
 
-# So we can execute this script.
-set-executionpolicy remotesigned
+# So we can execute this script. The CurrentUser scope should let this script execute without being run as admin
+set-executionpolicy RemoteSigned -Scope CurrentUser
 <#  
 Source : https://social.technet.microsoft.com/Forums/en-US/464ff2b2-e24a-4c82-a367-07e60a43c1b8/how-to-use-a-browseforfolder-box-in-my-powershell-script?forum=ITCG
 #>
 function Select-Folder($message='Select a folder', $path = 0) {
     $object = New-Object -comObject Shell.Application
     $folder = $object.BrowseForFolder(0, $message, 0, $path)  
-    if ($folder -ne $null) {
+    if ($null -ne $folder) {
     	$folder.self.Path
     	}
 }
 
 <# 
- Should we point to the right path for every VM based on a number...
+ We should point to the right path for every VM based on a number...
 #>
 function ConstructPath($x)
 {
@@ -76,9 +76,11 @@ else
 	    $LabName = "Lab-" + "{0:D2}" -f $i
 	      
 	    #Create the VM, and add it the the disks.
-	    New-VM -Name $LabName –MemoryStartupBytes 2GB
+	    New-VM -Name $LabName -MemoryStartupBytes 6GB
 	    Add-VMHardDiskDrive -VMName $LabName -path $path
 	    Add-VMHardDiskDrive -VMName $LabName -path $commonPath
+	    #set the processor count to 2
+	    SET-VMProcessor -VMname $LabName -count 2
     }
 }
 ```
